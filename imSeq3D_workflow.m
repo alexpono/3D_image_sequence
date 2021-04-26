@@ -25,7 +25,7 @@ save('pinus02-y-P2_0072.mat','walls','pits','channels')
 cd(nameFolder)
 load('pinus02-y-P2_0072.mat')
 %% read a 3D Stack in any plane
-
+c = clock; fprintf('start loading 2D stack at %0.2dh%0.2dm\n',c(4),c(5))
 % load the 3D stack
 tiff_info = imfinfo(folderFile);
 clear im2D
@@ -37,7 +37,7 @@ for iz = 1 : size(tiff_info, 1)
     im2D = imread(folderFile, iz);
     im3D(:,:,iz) = im2D;
 end
-
+c = clock; fprintf('3D stack read at %0.2dh%0.2dm\n',c(4),c(5))
 %% Segment one image
 % walls         % delimiting channel n° and n°
 % channels      % filled/empty
@@ -299,6 +299,9 @@ while contains('azesdxcr',get(gcf,'currentchar'))  % which gets changed when key
        iz = iz + 100;
     elseif get(gcf,'currentchar')=='r' 
        xAxis(1) = x-30; xAxis(2)=x+30; yAxis(1)=y-30; yAxis(2)=y+30;
+   elseif get(gcf,'currentchar')=='w' % start a new wall measurement 
+       % ginput the two channels
+       % got to the smallest z where they exist together 
    end
    
    clear xCH yCH
