@@ -243,6 +243,8 @@ walls(iw).z(iz)
 close all
 
 
+definingWall = 'off';
+
 him = figure('defaultAxesFontSize',20); hold on, box on
 iz = 1000;
 him2D = imshow(im3D(:,:,iz));
@@ -301,7 +303,38 @@ while contains('azesdxcr',get(gcf,'currentchar'))  % which gets changed when key
        xAxis(1) = x-30; xAxis(2)=x+30; yAxis(1)=y-30; yAxis(2)=y+30;
    elseif get(gcf,'currentchar')=='w' % start a new wall measurement 
        % ginput the two channels
-       % got to the smallest z where they exist together 
+       [xch1,ych1] = ginput(1);
+       clear d
+       for ich = 1 : length(channels)
+           idx = find(channels(ich).z  == iz);
+           xch = channels(ich).x(idx);
+           ych = channels(ich).y(idx);
+           d(ich) = ((xch-xch1)^2 + (ych-ych1)^2)^(1/2);
+       end
+       [~,ich1] = min(d);
+       [xch2,ych2] = ginput(1);
+       clear d
+       for ich = 1 : length(channels)
+           idx = find(channels(ich).z  == iz);
+           xch = channels(ich).x(idx);
+           ych = channels(ich).y(idx);
+           d(ich) = ((xch-xch2)^2 + (ych-ych2)^2)^(1/2);
+       end
+       [~,ich2] = min(d);
+       % go to the smallest z where they exist together
+       %   find the wall
+       for iw = 1 : length(walls)
+           if      (ich1 == walls(iw).ch(1) && ich2 == walls(iw).ch(2)) 
+                break
+           elseif  (ich1 == walls(iw).ch(2) && ich2 == walls(iw).ch(1))
+               break
+           end
+       end
+       iz = walls(iw).z(1);
+       definingWall = 'on';
+       definingWallw = iw;
+       definingWallch1 = ich1;
+       definingWallch2 = ich2;
    end
    
    clear xCH yCH
@@ -324,6 +357,21 @@ while contains('azesdxcr',get(gcf,'currentchar'))  % which gets changed when key
    hCH.YData = yCH;
    %set(gcf,'position',[100 100 1000 1000])
    title(sprintf('z: %0.0f',iz))
+   switch definingWall
+       case 'off'
+       case 'on'
+           if ishandle(h2ch)
+                delete(h2ch)
+           end
+           axis(gca,[xAxis(1) xAxis(2) yAxis(1) yAxis(2)])
+           xWch1 = channels(definingWallch1).x(walls(definingWallw).sChA(1));
+           yWch1 = channels(definingWallch1).y(walls(definingWallw).sChA(1));
+           xWch2 = channels(definingWallch2).x(walls(definingWallw).sChB(1));
+           yWch2 = channels(definingWallch2).y(walls(definingWallw).sChB(1));
+           h2ch = plot([xWch1,xWch2],[yWch1,yWch2],'og','markerFaceColor','g');
+   end
+   
+   
    figure(hminiMap)
    hp.Vertices(:,3) = iz * [1,1,1,1,1];
 
