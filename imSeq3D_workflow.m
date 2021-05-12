@@ -40,7 +40,7 @@ save('pinus02-y-P2_0072.mat','walls','pits','channels')
 cd(nameFolder)
 load('pinus02-y-P2_0072.mat')
 
-%% read a 3D stack and display plane at z = 1008
+%% im subtract and regions props of 2D images
 c = clock; fprintf('start loading 2D stack at %0.2dh%0.2dm\n',c(4),c(5))
 % load the 3D stack
 
@@ -100,6 +100,57 @@ while(1)
     im2D = imread(fileIm, iz);
     him.CData = im2D;
 end
+
+%%
+%% im subtract and regions props of 2D images
+c = clock; fprintf('start loading 2D stack at %0.2dh%0.2dm\n',c(4),c(5))
+% load the 3D stack
+
+c = clock; fprintf('3D stack read at %0.2dh%0.2dm\n',c(4),c(5))
+clear stats
+for iz = 1 : 2016
+    fprintf('iz: %0.0f\n',iz)
+    clear imDiff
+    
+    it = 00;
+    file00 = strcat(nameFolder,nameExpe,sprintf('_%0.4d.tif',it));
+    tiff_info = imfinfo(file00);
+    clear im2D
+    im2D00 = imread(file00, iz);
+    
+    it = 72;
+    file72 = strcat(nameFolder,nameExpe,sprintf('_%0.4d.tif',it));
+    tiff_info = imfinfo(file72);
+    clear im2D
+    im2D72 = imread(file72, iz);
+    
+    imDiff = imsubtract(im2D00,im2D72);
+    stats(iz).stats = regionprops(imDiff>6,'Area','Centroid','ConvexHull');
+end
+
+c = clock; fprintf('3D stack read at %0.2dh%0.2dm\n',c(4),c(5))
+
+%%
+figure('defaultAxesFontSize',20)
+hold on, box on
+for iz = 901 : 1 : 1100
+    clear statsiz
+    statsiz = stats(iz).stats;
+    listRegions = find([statsiz.Area]>25);
+    for iilr = 1 : length(listRegions)
+        ilr = listRegions(iilr);
+        clear V F
+        V = [statsiz(ilr).ConvexHull(:,1),...
+             statsiz(ilr).ConvexHull(:,2),...
+             iz*ones(size(statsiz(ilr).ConvexHull(:,2)))];
+        F = [1:size(V,1)];
+        patch('Faces',F,'Vertices',V,...
+            'faceColor',[0.1 0.1 0.8],'faceAlpha',.3,'edgeColor','none')
+    end
+end
+
+
+
 %% read a 3D Stack in any plane
 c = clock; fprintf('start loading 2D stack at %0.2dh%0.2dm\n',c(4),c(5))
 % load the 3D stack
