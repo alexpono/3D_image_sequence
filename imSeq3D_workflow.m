@@ -2,8 +2,23 @@
 
 % améliorer % show a wall
 clear all, close all
-nameFolder = 'C:\Users\Lenovo\Jottacloud\RECHERCHE\Projets\02_ESRF\data\ESRF\pinus02-y-P2\';
-nameFile = 'pinus02-y-P2_0072.tif';
+
+name = getenv('COMPUTERNAME');
+if strcmp(name,'DESKTOP-3ONLTD9')
+    nameFolder = strcat('C:\Users\Lenovo\Jottacloud\RECHERCHE\',...
+                        'Projets\02_ESRF\',...
+                        'data\ESRF\pinus02-y-P2\');
+    cd(nameFolder)
+    nameFile = 'pinus02-y-P2_0072.tif';
+elseif strcmp(name,'DARCY')
+    nameFolder = strcat('E:\ponoCleaningHDD\PRO\PRO_ESRF\ESRF_data\',...
+                        'pinus02-t-P2_out\');
+    cd(nameFolder)
+    nameExpe = 'pinus02-t-P2';
+    nameFile = 'pinus02-q-P2_0000.tif';
+end
+
+
 folderFile = strcat(nameFolder,nameFile);
 % 
 % tiff_info = imfinfo('2-A^11815^52071.tif'); % return tiff structure, one element per image
@@ -24,6 +39,118 @@ save('pinus02-y-P2_0072.mat','walls','pits','channels')
 %% LOADING DATA
 cd(nameFolder)
 load('pinus02-y-P2_0072.mat')
+
+%% im subtract and regions props of 2D images
+c = clock; fprintf('start loading 2D stack at %0.2dh%0.2dm\n',c(4),c(5))
+% load the 3D stack
+
+iz = 1008;
+
+it = 00;
+file00 = strcat(nameFolder,nameExpe,sprintf('_%0.4d.tif',it));
+tiff_info = imfinfo(file00);
+clear im2D
+im2D00 = imread(file00, iz);
+
+it = 72;
+file72 = strcat(nameFolder,nameExpe,sprintf('_%0.4d.tif',it));
+tiff_info = imfinfo(file72);
+clear im2D
+im2D72 = imread(file72, iz);
+
+c = clock; fprintf('3D stack read at %0.2dh%0.2dm\n',c(4),c(5))
+
+imDiff = imsubtract(im2D00,im2D72);
+figure('defaultAxesFontSize',20)
+imagesc(imDiff>6)
+stats = regionprops(imDiff>6,'Area','Centroid','ConvexHull');
+
+figure
+imshow(im2D72)
+hold on
+listRegions = find([stats.Area]>25);
+for ilr = listRegions
+    %plot(stats(ilr).ConvexHull(:,1),stats(ilr).ConvexHull(:,2),'or-')
+    clear V F
+    V = [stats(ilr).ConvexHull(:,1),stats(ilr).ConvexHull(:,2)];
+    F = [1:size(V,1)];
+    patch('Faces',F,'Vertices',V,...
+        'faceColor',[0.1 0.1 0.8],'faceAlpha',.3,'edgeColor','none')
+end
+%%
+hf = figure('defaultAxesFontSize',20);
+set(gcf,'position',[10 10 900 900])
+him = imshow(im2D00);
+%for it = 0 : 73
+it = 73;
+while(1)
+    if it == 0
+        it = 73;
+        figure(hf)
+        title('after')
+    elseif it == 73
+        it = 0;
+        figure(hf)
+        title('before')
+    end
+    pause(.2)
+    fileIm = strcat(nameFolder,nameExpe,sprintf('_%0.4d.tif',it));
+    tiff_info = imfinfo(file00);
+    clear im2D
+    im2D = imread(fileIm, iz);
+    him.CData = im2D;
+end
+
+%%
+%% im subtract and regions props of 2D images
+c = clock; fprintf('start loading 2D stack at %0.2dh%0.2dm\n',c(4),c(5))
+% load the 3D stack
+
+c = clock; fprintf('3D stack read at %0.2dh%0.2dm\n',c(4),c(5))
+clear stats
+for iz = 1 : 2016
+    fprintf('iz: %0.0f\n',iz)
+    clear imDiff
+    
+    it = 00;
+    file00 = strcat(nameFolder,nameExpe,sprintf('_%0.4d.tif',it));
+    tiff_info = imfinfo(file00);
+    clear im2D
+    im2D00 = imread(file00, iz);
+    
+    it = 72;
+    file72 = strcat(nameFolder,nameExpe,sprintf('_%0.4d.tif',it));
+    tiff_info = imfinfo(file72);
+    clear im2D
+    im2D72 = imread(file72, iz);
+    
+    imDiff = imsubtract(im2D00,im2D72);
+    stats(iz).stats = regionprops(imDiff>6,'Area','Centroid','ConvexHull');
+end
+
+c = clock; fprintf('3D stack read at %0.2dh%0.2dm\n',c(4),c(5))
+
+%%
+figure('defaultAxesFontSize',20)
+hold on, box on
+for iz = 901 : 1 : 1100
+    clear statsiz
+    statsiz = stats(iz).stats;
+    listRegions = find([statsiz.Area]>25);
+    for iilr = 1 : length(listRegions)
+        ilr = listRegions(iilr);
+        clear V F
+        V = [statsiz(ilr).ConvexHull(:,1),...
+             statsiz(ilr).ConvexHull(:,2),...
+             iz*ones(size(statsiz(ilr).ConvexHull(:,2)))];
+        F = [1:size(V,1)];
+        patch('Faces',F,'Vertices',V,...
+            'faceColor',[0.1 0.1 0.8],'faceAlpha',.3,'edgeColor','none')
+    end
+end
+
+
+
 %% read a 3D Stack in any plane
 c = clock; fprintf('start loading 2D stack at %0.2dh%0.2dm\n',c(4),c(5))
 % load the 3D stack
