@@ -5,11 +5,12 @@ clear all, close all
 
 name = getenv('COMPUTERNAME');
 if strcmp(name,'DESKTOP-3ONLTD9')
-    nameFolder = strcat('C:\Users\Lenovo\Jottacloud\RECHERCHE\',...
-                        'Projets\02_ESRF\',...
-                        'data\ESRF\pinus02-y-P2\');
+    nameFolder = strcat('C:\Users\Lenovo\Jottacloud\RECHERCHE\Projets\',...
+                        '02_ESRF\data\ESRF_full_sequences',...
+                        '\pinus02-y-P2\');
     cd(nameFolder)
-    nameFile = 'pinus02-y-P2_0072.tif';
+    nameExpe = 'pinus02-y-P2';
+    nameFile = 'pinus02-q-P2_0000.tif';
 elseif strcmp(name,'DARCY')
     nameFolder = strcat('E:\ponoCleaningHDD\PRO\PRO_ESRF\ESRF_data\',...
                         'pinus02-t-P2_out\');
@@ -61,14 +62,24 @@ im2D72 = imread(file72, iz);
 c = clock; fprintf('3D stack read at %0.2dh%0.2dm\n',c(4),c(5))
 
 imDiff = imsubtract(im2D00,im2D72);
-figure('defaultAxesFontSize',20)
-imagesc(imDiff>6)
-stats = regionprops(imDiff>6,'Area','Centroid','ConvexHull');
+himTh = figure('defaultAxesFontSize',20);
+imagesc(imDiff>6), colormap gray
+stats = regionprops(imDiff>6,'Area','Centroid','ConvexHull','Solidity');
+
+listRegions = find([stats.Area]>25);
+clear ikill
+ikill = [];
+for iilr = 1 : length(listRegions)
+    ilr = listRegions(iilr);
+    if [stats(ilr).Solidity]<.75
+        ikill = [ikill,iilr];
+    end
+end
+listRegions(ikill) = [];
 
 figure
 imshow(im2D72)
 hold on
-listRegions = find([stats.Area]>25);
 for ilr = listRegions
     %plot(stats(ilr).ConvexHull(:,1),stats(ilr).ConvexHull(:,2),'or-')
     clear V F
@@ -77,18 +88,31 @@ for ilr = listRegions
     patch('Faces',F,'Vertices',V,...
         'faceColor',[0.1 0.1 0.8],'faceAlpha',.3,'edgeColor','none')
 end
+
+figure(himTh)
+hold on
+for ilr = listRegions
+     %plot(stats(ilr).ConvexHull(:,1),stats(ilr).ConvexHull(:,2),'or-')
+    clear V F
+    V = [stats(ilr).ConvexHull(:,1),stats(ilr).ConvexHull(:,2)];
+    F = [1:size(V,1)];
+    patch('Faces',F,'Vertices',V,...
+        'faceColor',[0.1 0.1 0.8],'faceAlpha',.3,'edgeColor','none')
+    fprintf('id: %0.0f, solidity: %4.4d \n',...
+            stats(ilr).Centroid(1,1), stats(ilr).Solidity)
+end
 %%
 hf = figure('defaultAxesFontSize',20);
 set(gcf,'position',[10 10 900 900])
 him = imshow(im2D00);
 %for it = 0 : 73
-it = 73;
+it = 72;
 while(1)
     if it == 0
-        it = 73;
+        it = 72;
         figure(hf)
         title('after')
-    elseif it == 73
+    elseif it == 72
         it = 0;
         figure(hf)
         title('before')
@@ -101,39 +125,84 @@ while(1)
     him.CData = im2D;
 end
 
-%%
-%% im subtract and regions props of 2D images
-c = clock; fprintf('start loading 2D stack at %0.2dh%0.2dm\n',c(4),c(5))
-% load the 3D stack
+%% preload images 
+tic
+it = 00;
+file00 = strcat(nameFolder,nameExpe,sprintf('_%0.4d.tif',it));
+tiff_info = imfinfo(file00);
+clear im2D
+iz = 1;
+im2D = imread(file00, iz);
+im3D00 = zeros(size(im2D,1),size(im2D,2),size(tiff_info,1),class(im2D));
+for iz = 1 : size(tiff_info, 1)
+    clear im2D
+    im2D = imread(file00, iz);
+    im3D00(:,:,iz) = im2D;
+end
+toc
 
-c = clock; fprintf('3D stack read at %0.2dh%0.2dm\n',c(4),c(5))
-clear stats
-for iz = 1 : 2016
+it = 72;
+file72 = strcat(nameFolder,nameExpe,sprintf('_%0.4d.tif',it));
+tiff_info = imfinfo(file72);
+clear im2D
+iz = 1;
+im2D = imread(file72, iz);
+im3D72 = zeros(size(im2D,1),size(im2D,2),size(tiff_info,1),class(im2D));
+for iz = 1 : size(tiff_info, 1)
+    clear im2D
+    im2D = imread(file72, iz);
+    im3D72(:,:,iz) = im2D;
+end
+%% im subtract and regions props of 2D images
+
+ci = clock; fprintf('3D stack read at %0.2dh%0.2dm\n',ci(4),ci(5))
+clear stats toc_Readimages toc_imdiff toc_regionprops
+toc_Readimages  = 0;
+toc_imdiff      = 0;
+toc_regionprops = 0;
+for iz = 0001 : 2016
     fprintf('iz: %0.0f\n',iz)
-    clear imDiff
+    clear imDiff im2D00 im2D72
+    imDiff = zeros(336,336,'uint8');
+    im2D00 = zeros(336,336,'uint8');
+    im2D72 = zeros(336,336,'uint8');
     
-    it = 00;
-    file00 = strcat(nameFolder,nameExpe,sprintf('_%0.4d.tif',it));
-    tiff_info = imfinfo(file00);
-    clear im2D
-    im2D00 = imread(file00, iz);
+%     it = 00;
+%     file00 = strcat(nameFolder,nameExpe,sprintf('_%0.4d.tif',it));
+%     tiff_info = imfinfo(file00);
+%     im2D00 = imread(file00, iz);
+%     
+%     it = 72;
+%     file72 = strcat(nameFolder,nameExpe,sprintf('_%0.4d.tif',it));
+%     tiff_info = imfinfo(file72);
+%     im2D72 = imread(file72, iz);
+
+    tic
+    im2D00 = im3D00(:,:,iz);
+    im2D72 = im3D72(:,:,iz);
+    toc_Readimages = toc_Readimages + toc;
     
-    it = 72;
-    file72 = strcat(nameFolder,nameExpe,sprintf('_%0.4d.tif',it));
-    tiff_info = imfinfo(file72);
-    clear im2D
-    im2D72 = imread(file72, iz);
-    
+    tic
     imDiff = imsubtract(im2D00,im2D72);
-    stats(iz).stats = regionprops(imDiff>6,'Area','Centroid','ConvexHull');
+    toc_imdiff = toc_imdiff + toc;
+
+    tic
+    BW = bwareaopen(imDiff>6,25,8);
+    stats2D = regionprops(BW,'Area','Centroid','ConvexHull','Solidity');
+    listRegions = find([stats2D.Solidity]>.75);
+    stats(iz).stats = stats2D(listRegions);
+    toc_regionprops = toc_regionprops + toc;
 end
 
-c = clock; fprintf('3D stack read at %0.2dh%0.2dm\n',c(4),c(5))
-
+c = clock; fprintf('3D stack read at %0.2dh%0.2dm in %0.0f s \n',c(4),c(5),etime(c,ci))
+fprintf(strcat('time 2 Readimages : %0.0f s, \n',... 
+               'time 2 Readimages : %0.0f s, \n',...
+               'time 2 Readimages : %0.0f s \n'),...
+            toc_Readimages,toc_imdiff,toc_regionprops)
 %%
 figure('defaultAxesFontSize',20)
 hold on, box on
-for iz = 901 : 1 : 1100
+for iz = 1 : 1 : 2016
     clear statsiz
     statsiz = stats(iz).stats;
     listRegions = find([statsiz.Area]>25);
@@ -148,8 +217,33 @@ for iz = 901 : 1 : 1100
             'faceColor',[0.1 0.1 0.8],'faceAlpha',.3,'edgeColor','none')
     end
 end
+xlabel('x')
+ylabel('y')
+zlabel('z')
+view(109,9.7)
 
-
+%%
+colorsP = parula(2018);
+figure('defaultAxesFontSize',20)
+set(gcf,'position',[681   122   960   857])
+axis([0 336 0 336])
+hold on, box on
+for iz = 1 : 1 : 2016
+    clear statsiz
+    statsiz = stats(iz).stats;
+    listRegions = find([statsiz.Area]>25);
+    for iilr = 1 : length(listRegions)
+        ilr = listRegions(iilr);
+        clear V F
+        X = statsiz(ilr).Centroid(1,1);
+        Y = statsiz(ilr).Centroid(1,2);
+        plot(X,Y,'ok','markerFaceColor',colorsP(iz,:))
+    end
+    title(sprintf('%0.4d',iz))
+    %pause(.02)
+end
+xlabel('x')
+ylabel('y')
 
 %% read a 3D Stack in any plane
 c = clock; fprintf('start loading 2D stack at %0.2dh%0.2dm\n',c(4),c(5))
