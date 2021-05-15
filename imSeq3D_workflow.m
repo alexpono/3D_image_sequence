@@ -10,7 +10,7 @@ if strcmp(name,'DESKTOP-3ONLTD9')
                         '\pinus02-y-P2\');
     cd(nameFolder)
     nameExpe = 'pinus02-y-P2';
-    nameFile = 'pinus02-q-P2_0000.tif';
+    nameFile = 'pinus02-y-P2_0000.tif';
 elseif strcmp(name,'DARCY')
     nameFolder = strcat('E:\ponoCleaningHDD\PRO\PRO_ESRF\ESRF_data\',...
                         'pinus02-h-P2_out\');
@@ -156,7 +156,9 @@ imshow(im3D00(:,:,1008))
 set(gcf,'position',[27   197   917   769])
 %%      testing another web function
 % https://stackoverflow.com/questions/42626416/how-to-properly-tesselate-a-image-of-cells-using-matlab/42630616
-im = 255-im3D00(:,:,1008);
+iz = 1008;
+clear x y xv yv xs ys
+im = 255-im3D00(:,:,iz);
 
 figure,imagesc(im);axis image;
 
@@ -172,8 +174,41 @@ L = watershed(max(im2(:))-im2);
 [x,y]=find(L==0);
 
 %drw boundaries
-figure,imagesc(im3D00(:,:,1008)),axis image, colormap gray
+figure,imagesc(im3D00(:,:,iz)),axis image, colormap gray
 hold on, plot(y,x,'r.')
+
+% analyse each blob
+tmp=zeros(size(im));
+
+for i=1:max(L(:))
+  ind=find(L==i);
+  mask=L==i;
+  [thr,metric] =multithresh(im(ind),1);
+  if metric>0.7
+    tmp(ind)=im(ind)>thr;
+  end
+end
+
+% noise removal
+tmp=imopen(tmp,strel('disk',1));
+figure,imagesc(tmp),axis image
+
+
+clear stats
+stats = regionprops(L>0,'centroid');
+figure
+imagesc(im3D00(:,:,iz)), colormap gray
+%hold on, plot(y,x,'r.')
+hold on
+for is = 1 : length(stats)
+    xv(is) = stats(is).Centroid(:,1);
+    yv(is) = stats(is).Centroid(:,2);
+    plot(xv,yv,'+r')
+end
+
+voronoi(xv,yv)
+[vx,vy] = voronoi(xv,yv);
+
 %% try to find channels by thresholding images
 
 im2D = imresize(imgaussfilt(im3D00(:,:,1008) , 1),2);
