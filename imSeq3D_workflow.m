@@ -13,10 +13,10 @@ if strcmp(name,'DESKTOP-3ONLTD9')
     nameFile = 'pinus02-q-P2_0000.tif';
 elseif strcmp(name,'DARCY')
     nameFolder = strcat('E:\ponoCleaningHDD\PRO\PRO_ESRF\ESRF_data\',...
-                        'pinus02-t-P2_out\');
+                        'pinus02-h-P2_out\');
     cd(nameFolder)
-    nameExpe = 'pinus02-t-P2';
-    nameFile = 'pinus02-q-P2_0000.tif';
+    nameExpe = 'pinus02-h-P2';
+    nameFile = 'pinus02-h-P2_0000.tif';
 end
 
 
@@ -125,6 +125,64 @@ while(1)
     him.CData = im2D;
 end
 
+%% testing a blob function
+%  https://fr.mathworks.com/matlabcentral/answers/176553-blob-detection-in-matlab
+
+im2D = ~(im3D00(:,:,1008)>115);
+BBOX_OUT = [];
+NUM_BLOBS = [];
+LABEL = [];
+%%connected component analisys
+hblob = vision.BlobAnalysis;
+hblob.CentroidOutputPort = false;
+hblob.MaximumCount = 3500;
+hblob.Connectivity = 4;
+hblob.MaximumBlobArea = 6500;
+hblob.MinimumBlobArea = 20;
+hblob.LabelMatrixOutputPort = true;
+hblob.OrientationOutputPort = true;
+hblob.MajorAxisLengthOutputPort = true;
+hblob.MinorAxisLengthOutputPort = true;
+hblob.EccentricityOutputPort = true;
+hblob.ExtentOutputPort = true;
+hblob.BoundingBoxOutputPort = true;
+[AREA,BBOX,MAJOR,MINOR,ORIENT,ECCEN,EXTENT,LABEL] = step(hblob,im2D);
+imshow(LABEL*2^16)
+numberOfBlobs = length(AREA);
+
+set(gcf,'position',[947         155        1012         832])
+figure
+imshow(im3D00(:,:,1008))
+set(gcf,'position',[27   197   917   769])
+%%      testing another web function
+% https://stackoverflow.com/questions/42626416/how-to-properly-tesselate-a-image-of-cells-using-matlab/42630616
+im = 255-im3D00(:,:,1008);
+
+figure,imagesc(im);axis image;
+
+% blur image
+sigma=2;
+kernel = fspecial('gaussian',4*sigma+1,sigma);
+im2=imfilter(im,kernel,'symmetric');
+
+figure,imagesc(im2);axis image; colormap gray
+
+% watershed
+L = watershed(max(im2(:))-im2);
+[x,y]=find(L==0);
+
+%drw boundaries
+figure,imagesc(im3D00(:,:,1008)),axis image, colormap gray
+hold on, plot(y,x,'r.')
+%% try to find channels by thresholding images
+
+im2D = imresize(imgaussfilt(im3D00(:,:,1008) , 1),2);
+figure
+imagesc(im2D)
+
+[centers,radii] = imfindcircles(im2D,[7 50],'ObjectPolarity','dark');
+hold on
+viscircles(centers, radii,'EdgeColor','b');
 %% preload images 
 tic
 it = 00;
