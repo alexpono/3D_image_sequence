@@ -376,30 +376,144 @@ figure('defaultAxesFontSize',20)
 set(gcf,'position',[681   122   450   857])
 plot(Y,Z,'or')
 %% try to join the points:
+X = []; Y = []; Z = [];
+for iz = 1 : 1 : 2016
+    clear statsiz
+    statsiz = stats(iz).stats;
+    for il = 1 : length(statsiz)
+    X = [X,statsiz(il).Centroid(1,1)];
+    Y = [Y,statsiz(il).Centroid(1,2)];
+    Z = [Z,iz];
+    end
+end
+
+nP = length(X);
+Pstatus = zeros(size(X)); % 0 / 1  not paired / paired
 nb = 0;
 listB = struct();
+fprintf('progress: %0.0f / %0.0f \n',sum(Pstatus),length(Pstatus))
+% initialize listB
+iz = 1088; % 1 : 2016
+clear d
+idzA = find(Z==iz);
+nb = length(idzA);
+for ib = 1 : length(idzA)
+    listB(ib).X(1) = X(idzA(ib));
+    listB(ib).Y(1) = Y(idzA(ib));
+    listB(ib).Z(1) = Z(idzA(ib));
+    Pstatus(idzA(ib)) = 1;
+end
+fprintf('progress: %0.0f / %0.0f \n',sum(Pstatus),length(Pstatus))
+
 % no prediction
-for iz = 1160 %1 : 2016
-    clear d
-    idzA = find(Z==iz);
+for iz = 1088 : 1092%2016
+    
+    fprintf('iz: %0.0f nbubbles: %0.0f \n',iz,length(listB))
+    % look if the bubbles already defined have a bubble at next z
+    % find the bubbles at this z
+    clear idzbbl idzbblLOC
+    idzbbl = [];
+    idzbblLOC = [];
+    for ib = 1 : length(listB)
+        if find([listB(ib).Z]==iz)
+            idzbbl = [idzbbl,ib];
+            idzbblLOC = [idzbblLOC,find([listB(ib).Z]==iz)];
+        end
+    end
+    
     idzB = find(Z==(iz+1));
-    % build map length:
-    if ~isempty(idzA) &&  ~isempty(idzB)
-        for iA = 1 : length(idzA)
+        % build map length:
+        clear d
+    if ~isempty(idzbbl) &&  ~isempty(idzB)
+        for iA = 1 : length(idzbbl)
+            xxa = listB(idzbbl(iA)).X(idzbblLOC(iA));
+            yya = listB(idzbbl(iA)).Y(idzbblLOC(iA));
             for iB = 1 : length(idzB)
-                d(iA,iB) = sqrt((X(idzA(iA))-X(idzB(iB)))^2);
+                xxb = X(idzB(iB));
+                yyb = Y(idzB(iB));
+                d(iA,iB) = sqrt((xxa-xxb)^2+(yya-yyb)^2);
             end
         end
     end
-    [~,Imin] = mink(d(:),length(d));
-    [row,col] = ind2sub(size(d),Imin)
+    d
+    for id = 1 : length(idzbbl)
+        clear a imd
+        [a,imd] = min(d(id,:));
+        if  a < 3
+            fprintf('imd: %0.0f \n',imd)
+            listB(id).X = [listB(id).X, X(idzB(imd))];
+            listB(id).Y = [listB(id).Y, Y(idzB(imd))];
+            listB(id).Z = [listB(id).Z, Z(idzB(imd))];
+            Pstatus(idzB(imd)) = 1;
+        end
+    end
+fprintf('progress: %0.0f / %0.0f \n',sum(Pstatus),length(Pstatus))    
+    
+% find the bugclose all
+bxa = []; bya = [];
+bxb = []; byb = [];
+for iA = 1 : length(idzbbl)
+    bxa = [bxa,listB(idzbbl(iA)).X(idzbblLOC(iA))];
+    bya = [bya,listB(idzbbl(iA)).Y(idzbblLOC(iA))];
+end
+for iB = 1 : length(idzB)
+    bxb = [bxb,X(idzB(iB))];
+    byb = [byb,Y(idzB(iB))];
+end
+figure
+plot(bxb,byb,'+r')
+hold on
+plot(bxa,bya,'ob')
+axis([0 336 0 336])
+pause(1)
+%
+%     
+%     % look for other bubbles
+%     clear d
+%     idzA = find(Z==iz);
+%     idzB = find(Z==(iz+1));
+%     % build map length:
+%     if ~isempty(idzA) &&  ~isempty(idzB)
+%         for iA = 1 : length(idzA)
+%             for iB = 1 : length(idzB)
+%                 d(iA,iB) = sqrt((X(idzA(iA))-X(idzB(iB)))^2);
+%             end
+%         end
+%     end
+%     [minVal,Imin] = mink(d(:),2*length(d));
+%     [row,col] = ind2sub(size(d),Imin);
+%     
+
 end
 
+%%
+bxa = []; bya = [];
+bxb = []; byb = [];
+for iA = 1 : length(idzbbl)
+    bxa = [bxa,listB(idzbbl(iA)).X(idzbblLOC(iA))];
+    bya = [bya,listB(idzbbl(iA)).Y(idzbblLOC(iA))];
+end
+for iB = 1 : length(idzB)
+    bxb = [bxb,X(idzB(iB))];
+    byb = [byb,Y(idzB(iB))];
+end
 figure
-plot(X(idzA),Y(idzA),'+b'), hold on
-plot(X(idzB),Y(idzB),'+r')
+plot(bxb,byb,'+r')
+hold on
+plot(bxa,bya,'ob')
+%%
+figure, hold on
+for ib = 1 : length(listB)
+    clear X Y Z
+    X3D = listB(ib).X;
+    Y3D = listB(ib).Y;
+    Z3D = listB(ib).Z;
+    plot3(X3D,Y3D,Z3D)
+end
+%axis([0 336 0 336 1])
 % prediction
-
+view(3)
+max(Z3D)
 %% read a 3D Stack in any plane
 c = clock; fprintf('start loading 2D stack at %0.2dh%0.2dm\n',c(4),c(5))
 % load the 3D stack
