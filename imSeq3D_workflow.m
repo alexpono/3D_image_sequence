@@ -159,9 +159,21 @@ set(gcf,'position',[27   197   917   769])
 iz = 1008;
 clear x y xv yv xs ys
 im = 255-im3D00(:,:,iz);
+figure,
+imshow(im)
 
+imEAN = 255-uint8(mean(im3D00(:,:,iz+[-10:+10]),3));
+figure
+imshow(imEAN)
+%%
+
+%im = imEAN;
+im = double(im3D72(:,:,iz)) - double(im3D00(:,:,iz));
+min(im(:))
+max(im(:))
+%%
 figure,imagesc(im);axis image;
-
+%%
 % blur image
 sigma=2;
 kernel = fspecial('gaussian',4*sigma+1,sigma);
@@ -169,8 +181,9 @@ im2=imfilter(im,kernel,'symmetric');
 
 figure,imagesc(im2);axis image; colormap gray
 
-% watershed
+%% watershed
 L = watershed(max(im2(:))-im2);
+L = watershed(im2 > -5);
 [x,y]=find(L==0);
 
 %drw boundaries
@@ -271,9 +284,15 @@ for iz = 0001 : 2016
 %     im2D72 = imread(file72, iz);
 
     tic
+    if iz >1 && iz <2016
+    im2D00 = mean(im3D00(:,:,max(iz-5,1):min(iz+5,2016)),3);
+    im2D72 = mean(im3D72(:,:,max(iz-5,1):min(iz+5,2016)),3);
+    else
     im2D00 = im3D00(:,:,iz);
     im2D72 = im3D72(:,:,iz);
-    toc_Readimages = toc_Readimages + toc;
+    end
+        
+        toc_Readimages = toc_Readimages + toc;
     
     tic
     imDiff = imsubtract(im2D00,im2D72);
@@ -292,7 +311,7 @@ fprintf(strcat('time 2 Readimages : %0.0f s, \n',...
                'time 2 Readimages : %0.0f s, \n',...
                'time 2 Readimages : %0.0f s \n'),...
             toc_Readimages,toc_imdiff,toc_regionprops)
-%%
+%% 3D rendering 
 figure('defaultAxesFontSize',20)
 hold on, box on
 for iz = 1 : 1 : 2016
@@ -315,7 +334,7 @@ ylabel('y')
 zlabel('z')
 view(109,9.7)
 
-%%
+%% 2D renderings 
 colorsP = parula(2018);
 figure('defaultAxesFontSize',20)
 set(gcf,'position',[681   122   960   857])
@@ -337,6 +356,49 @@ for iz = 1 : 1 : 2016
 end
 xlabel('x')
 ylabel('y')
+%% 3D renderings :xz and yz planes
+colXY = parula(337);
+X = []; Y = []; Z = [];
+for iz = 1 : 1 : 2016
+    clear statsiz
+    statsiz = stats(iz).stats;
+    for il = 1 : length(statsiz)
+    X = [X,statsiz(il).Centroid(1,1)];
+    Y = [Y,statsiz(il).Centroid(1,2)];
+    Z = [Z,iz];
+    end
+end
+figure('defaultAxesFontSize',20)
+set(gcf,'position',[681   122   450   857])
+plot(X,Z,'or')
+
+figure('defaultAxesFontSize',20)
+set(gcf,'position',[681   122   450   857])
+plot(Y,Z,'or')
+%% try to join the points:
+nb = 0;
+listB = struct();
+% no prediction
+for iz = 1160 %1 : 2016
+    clear d
+    idzA = find(Z==iz);
+    idzB = find(Z==(iz+1));
+    % build map length:
+    if ~isempty(idzA) &&  ~isempty(idzB)
+        for iA = 1 : length(idzA)
+            for iB = 1 : length(idzB)
+                d(iA,iB) = sqrt((X(idzA(iA))-X(idzB(iB)))^2);
+            end
+        end
+    end
+    [~,Imin] = mink(d(:),length(d));
+    [row,col] = ind2sub(size(d),Imin)
+end
+
+figure
+plot(X(idzA),Y(idzA),'+b'), hold on
+plot(X(idzB),Y(idzB),'+r')
+% prediction
 
 %% read a 3D Stack in any plane
 c = clock; fprintf('start loading 2D stack at %0.2dh%0.2dm\n',c(4),c(5))
