@@ -377,6 +377,7 @@ toc
 % select a starting convexhull and propagate using the convex hulls
 iz = 1008;
 listB = struct();
+ib = 0;
 
 figure
 if iz >1 && iz <2016
@@ -391,14 +392,14 @@ imagesc(im2D00), colormap gray
 
 % list stats at current z:
 listats = find([statsAll.z]==iz);
-statsiz = stats(iz).stats;
-clear a b, [a,b] = max([statsiz.Area]);
-for ilr = 1 : length(statsiz)
+clear a b, [a,b] = max([statsAll(1,listats).Area]);
+for iilr = 1 : length(listats)
     clear V F
-    X = [statsiz(ilr).ConvexHull(:,1)];
-    Y = [statsiz(ilr).ConvexHull(:,2)];
+    ilr = listats(iilr);
+    X = [statsAll(ilr).ConvexHull(:,1)];
+    Y = [statsAll(ilr).ConvexHull(:,2)];
     hold on,
-    if ilr == b
+    if iilr == b
         fclr = [0.8 0.2 0.2];
     else
         fclr = [0.1 0.1 0.8];% face color
@@ -408,8 +409,30 @@ for ilr = 1 : length(statsiz)
 end
 
 % select the largest region
-listB(1).z = iz;
-listB(1).statsNumber = iz;
+ib = ib + 1;
+listB(1).z           = iz;
+listB(1).statsNumber = listats(b);
+
+% propagate
+iz = iz + 1;
+% list stats at current z:
+listats = find([statsAll.z]==iz);
+% find the one that connect most with actual bubble
+
+for iilr = 1 : length(listats)
+    clear V F
+    ilr = listats(iilr);
+    X = [statsAll(ilr).ConvexHull(:,1)];
+    Y = [statsAll(ilr).ConvexHull(:,2)];
+    hold on,
+    if iilr == b
+        fclr = [0.8 0.2 0.2];
+    else
+        fclr = [0.1 0.1 0.8];% face color
+    end
+    patch('xdata',X,'ydata',Y,...
+        'faceColor',fclr,'faceAlpha',.3,'edgeColor','none')
+end
 %% 2D renderings 
 colorsP = parula(2018);
 figure('defaultAxesFontSize',20)
