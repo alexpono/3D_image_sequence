@@ -269,6 +269,7 @@ toc_regionprops = 0;
 for iz = 0001 : 2016
     fprintf('iz: %0.0f\n',iz)
     clear imDiff im2D00 im2D72
+    
     imDiff = zeros(336,336,'uint8');
     im2D00 = zeros(336,336,'uint8');
     im2D72 = zeros(336,336,'uint8');
@@ -314,26 +315,101 @@ fprintf(strcat('time 2 Readimages : %0.0f s, \n',...
 %% 3D rendering 
 figure('defaultAxesFontSize',20)
 hold on, box on
-for iz = 1 : 1 : 2016
+for iz =  1 : 1 : 2016
     clear statsiz
     statsiz = stats(iz).stats;
     listRegions = find([statsiz.Area]>25);
     for iilr = 1 : length(listRegions)
         ilr = listRegions(iilr);
+%         clear V F
+%         V = [statsiz(ilr).ConvexHull(:,1),...
+%              statsiz(ilr).ConvexHull(:,2),...
+%              iz*ones(size(statsiz(ilr).ConvexHull(:,2)))];
+%         F = [1:size(V,1)];
+%         patch('Faces',F,'Vertices',V,...
+%             'faceColor',[0.1 0.1 0.8],'faceAlpha',.3,'edgeColor','none')
+        
         clear V F
-        V = [statsiz(ilr).ConvexHull(:,1),...
-             statsiz(ilr).ConvexHull(:,2),...
-             iz*ones(size(statsiz(ilr).ConvexHull(:,2)))];
-        F = [1:size(V,1)];
+        V = [[statsiz(ilr).ConvexHull(:,1);statsiz(ilr).ConvexHull(:,1)],...
+             [statsiz(ilr).ConvexHull(:,2);statsiz(ilr).ConvexHull(:,2)],...
+             [(iz-.5)*ones(size(statsiz(ilr).ConvexHull(:,2)));(iz+.5)*ones(size(statsiz(ilr).ConvexHull(:,2)))]];
+        clear nPts, nPts = size(V,1)/2;
+        for iff = 1 : nPts-1
+            F(iff,1:4) = [iff,iff+1,nPts+iff+1,nPts+iff+0];
+        end
         patch('Faces',F,'Vertices',V,...
             'faceColor',[0.1 0.1 0.8],'faceAlpha',.3,'edgeColor','none')
+        
     end
 end
 xlabel('x')
 ylabel('y')
 zlabel('z')
 view(109,9.7)
+axis([0 336 0 336 0 2016])
+%axis([100 250 50 200 1450 1550])
+%%
+figure
+        %F = [1,2,3,4,5];
+        patch('Faces',F,'Vertices',V,...
+            'faceColor',[0.1 0.1 0.8],'faceAlpha',.3,'edgeColor','none')
+        hold on
+plot3(V(F,1),V(F,2),V(F,3),'or')
+view(3)
+%% try to work with a global stat variable
+tic
+statsAll = struct();
+isa = 0;
+for iz = 1 : 2016
+    clear statsiz
+    statsiz = stats(iz).stats;
+    for ilr = 1 : length(statsiz)
+        isa = isa + 1;
+        statsAll(isa).z = iz;
+        statsAll(isa).Area = statsiz(ilr).Area;
+        statsAll(isa).Centroid = statsiz(ilr).Centroid;
+        statsAll(isa).ConvexHull = statsiz(ilr).ConvexHull;
+        statsAll(isa).Solidity = statsiz(ilr).Solidity;
+    end
+end
+toc
+%% identify the tracheids
+% select a starting convexhull and propagate using the convex hulls
+iz = 1008;
+listB = struct();
 
+figure
+if iz >1 && iz <2016
+    im2D00 = mean(im3D00(:,:,max(iz-5,1):min(iz+5,2016)),3);
+    im2D72 = mean(im3D72(:,:,max(iz-5,1):min(iz+5,2016)),3);
+else
+    im2D00 = im3D00(:,:,iz);
+    im2D72 = im3D72(:,:,iz);
+end
+imDiff = imsubtract(im2D00,im2D72);
+imagesc(im2D00), colormap gray
+
+% list stats at current z:
+listats = find([statsAll.z]==iz);
+statsiz = stats(iz).stats;
+clear a b, [a,b] = max([statsiz.Area]);
+for ilr = 1 : length(statsiz)
+    clear V F
+    X = [statsiz(ilr).ConvexHull(:,1)];
+    Y = [statsiz(ilr).ConvexHull(:,2)];
+    hold on,
+    if ilr == b
+        fclr = [0.8 0.2 0.2];
+    else
+        fclr = [0.1 0.1 0.8];% face color
+    end
+    patch('xdata',X,'ydata',Y,...
+        'faceColor',fclr,'faceAlpha',.3,'edgeColor','none')
+end
+
+% select the largest region
+listB(1).z = iz;
+listB(1).statsNumber = iz;
 %% 2D renderings 
 colorsP = parula(2018);
 figure('defaultAxesFontSize',20)
