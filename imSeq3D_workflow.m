@@ -375,7 +375,7 @@ end
 toc
 %% identify the tracheids
 % select a starting convexhull and propagate using the convex hulls
-iz = 1008;
+iz = 900;
 listB = struct();
 ib = 0;
 
@@ -410,29 +410,49 @@ end
 
 % select the largest region
 ib = ib + 1;
-listB(1).z           = iz;
-listB(1).statsNumber = listats(b);
+listB(ib).z           = iz;
+listB(ib).statsNumber = listats(b);
+listB(ib).x = statsAll(listats(b)).Centroid(1,1);
+listB(ib).y = statsAll(listats(b)).Centroid(1,2);
 
 % propagate
-iz = iz + 1;
-% list stats at current z:
-listats = find([statsAll.z]==iz);
-% find the one that connect most with actual bubble
-
-for iilr = 1 : length(listats)
-    clear V F
-    ilr = listats(iilr);
-    X = [statsAll(ilr).ConvexHull(:,1)];
-    Y = [statsAll(ilr).ConvexHull(:,2)];
-    hold on,
-    if iilr == b
-        fclr = [0.8 0.2 0.2];
-    else
-        fclr = [0.1 0.1 0.8];% face color
+while iz<1400
+    iz = iz + 1;
+    % list stats at current z:
+    listats = find([statsAll.z]==iz);
+    % find the one that connect most with actual bubble
+    icb = listB(ib).statsNumber(end); % icb : i current bubble
+    Xcb = [statsAll(icb).ConvexHull(:,1)];
+    Ycb = [statsAll(icb).ConvexHull(:,2)];
+    clear polarea
+    for iilr =  1 : length(listats)
+        ilr = listats(iilr);
+        X = [statsAll(ilr).ConvexHull(:,1)];
+        Y = [statsAll(ilr).ConvexHull(:,2)];
+        
+        poly1   = polyshape(Xcb,Ycb);
+        poly2   = polyshape(X  ,Y  );
+        polyout = intersect(poly1,poly2);
+        polarea(iilr) = polyout.area;
     end
-    patch('xdata',X,'ydata',Y,...
-        'faceColor',fclr,'faceAlpha',.3,'edgeColor','none')
+    
+    [a,b] = max(polarea);
+    if a > 5
+        listB(ib).z = [listB(ib).z,iz];
+        listB(ib).x = [listB(ib).x,statsAll(listats(b)).Centroid(1,1)];
+        listB(ib).y = [listB(ib).y,statsAll(listats(b)).Centroid(1,2)];
+        listB(ib).statsNumber = [listB(ib).statsNumber,listats(b)];
+    end
 end
+%% checking with a 3D figure
+figure, box on
+clear X3D Y3D Z3D
+X3D = [listB(ib).x];
+Y3D = [listB(ib).y];
+Z3D = [listB(ib).z];
+plot3(X3D,Y3D,Z3D,'lineWidth',4)
+axis([0 336 0 336 900 1300])
+xlabel('x'), ylabel('y'), zlabel('z')
 %% 2D renderings 
 colorsP = parula(2018);
 figure('defaultAxesFontSize',20)
