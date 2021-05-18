@@ -231,7 +231,7 @@ imagesc(im2D)
 [centers,radii] = imfindcircles(im2D,[7 50],'ObjectPolarity','dark');
 hold on
 viscircles(centers, radii,'EdgeColor','b');
-%% preload images 
+%% preload images - short time scale ( 1 sec )
 tic
 it = 00;
 file00 = strcat(nameFolder,nameExpe,sprintf('_%0.4d.tif',it));
@@ -259,6 +259,37 @@ for iz = 1 : size(tiff_info, 1)
     im2D = imread(file72, iz);
     im3D72(:,:,iz) = im2D;
 end
+
+%% preload images - long time scale ( 20 minutes )
+tic
+it = 72;
+file00 = strcat(nameFolder,nameExpe,sprintf('_%0.4d.tif',it));
+file00 = 'C:\Users\Lenovo\Jottacloud\RECHERCHE\Projets\02_ESRF\data\ESRF_full_sequences\pinus02-w-P2\pinus02-w-P2_0072.tif';
+tiff_info = imfinfo(file00);
+clear im2D
+iz = 1;
+im2D = imread(file00, iz);
+im3D00 = zeros(size(im2D,1),size(im2D,2),size(tiff_info,1),class(im2D));
+for iz = 1 : size(tiff_info, 1)
+    clear im2D
+    im2D = imread(file00, iz);
+    im3D00(:,:,iz) = im2D;
+end
+toc
+
+it = 0;
+file72 = strcat(nameFolder,nameExpe,sprintf('_%0.4d.tif',it));
+tiff_info = imfinfo(file72);
+clear im2D
+iz = 1;
+im2D = imread(file72, iz);
+im3D72 = zeros(size(im2D,1),size(im2D,2),size(tiff_info,1),class(im2D));
+for iz = 1 : size(tiff_info, 1)
+    clear im2D
+    im2D = imread(file72, iz);
+    im3D72(:,:,iz) = im2D;
+end
+
 %% im subtract and regions props of 2D images
 
 ci = clock; fprintf('3D stack read at %0.2dh%0.2dm\n',ci(4),ci(5))
@@ -315,7 +346,7 @@ fprintf(strcat('time 2 Readimages : %0.0f s, \n',...
 %% 3D rendering 
 figure('defaultAxesFontSize',20)
 hold on, box on
-for iz =  1 : 1 : 2016
+for iz =  1 : 10 : 2016
     clear statsiz
     statsiz = stats(iz).stats;
     listRegions = find([statsiz.Area]>25);
@@ -348,7 +379,7 @@ zlabel('z')
 view(109,9.7)
 axis([0 336 0 336 0 2016])
 %axis([100 250 50 200 1450 1550])
-%%
+%% test that can be removed ??
 figure
         %F = [1,2,3,4,5];
         patch('Faces',F,'Vertices',V,...
@@ -375,7 +406,8 @@ end
 toc
 %% identify the tracheids
 % select a starting convexhull and propagate using the convex hulls
-iz = 900;
+izStart = 1050;
+iz = izStart;
 listB = struct();
 ib = 0;
 
@@ -415,9 +447,15 @@ listB(ib).statsNumber = listats(b);
 listB(ib).x = statsAll(listats(b)).Centroid(1,1);
 listB(ib).y = statsAll(listats(b)).Centroid(1,2);
 
-% propagate
-while iz<1400
-    iz = iz + 1;
+% propagate UP AND DOWN
+DIRz = 'up';
+while iz<2016
+    DIRz
+    if strcmp(DIRz , 'up')
+        iz = iz + 10
+    elseif strcmp(DIRz , 'down')
+        iz = iz - 10
+    end
     % list stats at current z:
     listats = find([statsAll.z]==iz);
     % find the one that connect most with actual bubble
@@ -442,6 +480,11 @@ while iz<1400
         listB(ib).x = [listB(ib).x,statsAll(listats(b)).Centroid(1,1)];
         listB(ib).y = [listB(ib).y,statsAll(listats(b)).Centroid(1,2)];
         listB(ib).statsNumber = [listB(ib).statsNumber,listats(b)];
+    elseif strcmp(DIRz , 'up')
+        DIRz = 'down';
+        iz = izStart;
+    else
+        break
     end
 end
 %% checking with a 3D figure
@@ -450,8 +493,9 @@ clear X3D Y3D Z3D
 X3D = [listB(ib).x];
 Y3D = [listB(ib).y];
 Z3D = [listB(ib).z];
-plot3(X3D,Y3D,Z3D,'lineWidth',4)
-axis([0 336 0 336 900 1300])
+plot3(X3D,Y3D,Z3D,'-o','lineWidth',4)
+%axis([0 336 0 336 900 1300])
+%axis([170 200 150 175 900 1300])
 xlabel('x'), ylabel('y'), zlabel('z')
 %% 2D renderings 
 colorsP = parula(2018);
