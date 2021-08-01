@@ -547,6 +547,7 @@ bones(3).x = [189 189];
 bones(3).y = [113 113];
 bones(3).z = [1490 1505];
 
+tic
 figure('defaultAxesFontSize',20,'position',[500 100 1200 800]), hold on, box on
 plot3(allpix_XYZ(:,1),allpix_XYZ(:,2),allpix_XYZ(:,3),'rs')
 xlim([160 200])
@@ -575,7 +576,7 @@ view(3)
 xlabel('x')
 ylabel('y')
 zlabel('z')
-
+toc
 
 %% determine who belongs to which bone
 tic
@@ -613,7 +614,7 @@ toc
 % to make it super fast, we extend the bones using selVol and bones
 % structures
 
-boneStep = 5;
+boneStep = 1;
 
 figure('defaultAxesFontSize',20,'position',[500 100 1200 800]), hold on, box on
 % test with bone 2:
@@ -641,8 +642,68 @@ Z = dirB(3)+zBs(end)+w(3,1)*P+w(3,2)*Q;
 surf(X,Y,Z,'edgeColor','none')
 plot3(xb,yb,zb,'o','color',.2*[1 1 1])
 plot3(xBs,yBs,zBs,'o--b','lineWidth',10)
+%plot3(allpix_XYZ(:,1),allpix_XYZ(:,2),allpix_XYZ(:,3),'rs')
+zlim([1400 1600])
 %plot3()
 view(3)
+
+tic
+% find all the voxels in the plane: (distance max to the plane: sqrt(3))
+% help from https://fr.mathworks.com/matlabcentral/answers/371665-distance-from-point-to-plane-plane-was-created-from-3d-point-data
+clear d b
+%d = sqrt( (X-xb').^2 + (Z-zb').^2 + (Y-yb').^2) ;
+P0 = [dirB(1)+xBs(end),dirB(2)+yBs(end),dirB(3)+zBs(end)];
+N = dirB/norm(dirB);
+XXX = [xb',yb',zb'];
+XXXmP0 = XXX(1:end,:)-P0;
+d = dot(XXXmP0,N.*ones(size(XXXmP0,1),1),2);
+b = find(abs(d)<sqrt(3));
+toc
+newXb = mean(xb(b))
+newYb = mean(yb(b))
+newZb = mean(zb(b))
+%figure, hold on
+%plot3(xb(b),yb(b),zb(b),'-g')
+plot3(newXb,newYb,newZb,'og','markerSize',10)
+zlim([1505 1507])
+
+%%
+load('workSpaceLine670.mat')
+%% try to cut using regionprops
+% build a zero matrix:
+Abinary = false(336,336,2016);
+tic
+lX = allpix_XYZ(list2Bone,1);
+lY = allpix_XYZ(list2Bone,2);
+lZ = allpix_XYZ(list2Bone,3);
+ind = sub2ind(size(Abinary),lX,lY,lZ);
+%Abinary(allpix_XYZ(list2Bone,1),allpix_XYZ(list2Bone,2),allpix_XYZ(list2Bone,3)) = 1;
+toc
+%%
+tic
+Abinary(ind) = 1;
+toc
+tic
+stats = regionprops3(Abinary,'BoundingBox','Centroid','ConvexHull','Solidity','Volume','VoxelList');
+toc
+figure('defaultAxesFontSize',20,'position',[500 100 1200 800]), hold on, box on
+colStats2 = parula(size(stats,1));
+for istat = 1 : size(stats,1)
+    clear XYZ
+    XYZ = stats.VoxelList{istat,1} ;
+    plot3(XYZ(:,1),XYZ(:,2),XYZ(:,3),'or','markeredgeColor',colStats2(istat,:))
+
+end
+
+%%
+%for ii = 1 : length(list2Bone)
+%Abinary allpix_XYZ(:,1)
+%end
+%%
+figure('defaultAxesFontSize',20,'position',[500 100 1200 800]), hold on, box on
+plot3(allpix_XYZ(list2Bone,1),allpix_XYZ(list2Bone,2),allpix_XYZ(list2Bone,3),'or')
+view(3)
+
 %% https://fr.mathworks.com/matlabcentral/answers/291485-how-can-i-plot-a-3d-plane-knowing-its-center-point-coordinates-and-its-normal
 figure('defaultAxesFontSize',20,'position',[500 100 1200 800]), hold on, box on
 v = [1, 2, 3];
