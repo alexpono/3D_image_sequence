@@ -669,17 +669,17 @@ zlim([1505 1507])
 
 %%
 load('workSpaceLine670.mat')
-%% try to cut using regionprops
+%% try to cut/join the cut parts using regionprops
 % build a zero matrix:
 Abinary = false(336,336,2016);
 tic
-lX = allpix_XYZ(list2Bone,1);
-lY = allpix_XYZ(list2Bone,2);
+lX = allpix_XYZ(list2Bone,2);
+lY = allpix_XYZ(list2Bone,1);
 lZ = allpix_XYZ(list2Bone,3);
 ind = sub2ind(size(Abinary),lX,lY,lZ);
 %Abinary(allpix_XYZ(list2Bone,1),allpix_XYZ(list2Bone,2),allpix_XYZ(list2Bone,3)) = 1;
 toc
-%%
+%% show result of regionprops
 tic
 Abinary(ind) = 1;
 toc
@@ -687,14 +687,53 @@ tic
 stats = regionprops3(Abinary,'BoundingBox','Centroid','ConvexHull','Solidity','Volume','VoxelList');
 toc
 figure('defaultAxesFontSize',20,'position',[500 100 1200 800]), hold on, box on
-colStats2 = parula(size(stats,1));
+colStats2 = parula(size(stats,1)+size(selVol,2));
 for istat = 1 : size(stats,1)
     clear XYZ
     XYZ = stats.VoxelList{istat,1} ;
     plot3(XYZ(:,1),XYZ(:,2),XYZ(:,3),'or','markeredgeColor',colStats2(istat,:))
 
 end
+view(3)
+%% Take one of the selVol and find if the new regionprops can be attached
 
+Alabel =  false(336,336,2016);
+
+
+for ib = 1:3
+    clear xb yb zb ind
+    xb = selVol(ib).x;
+    yb = selVol(ib).y;
+    zb = selVol(ib).z;
+    plot3(xb,yb,zb,'or','markeredgeColor',colStats2(size(stats,1)+ib,:))
+    ind = sub2ind(size(Alabel),xb,yb,zb);
+    Alabel(ind) = ib;
+    
+    for istat = 1: size(stats,1)
+        clear XYZ
+        XYZ = stats.VoxelList{istat,1} ;
+        
+        plot3(xb,yb,zb,'or','markeredgeColor',colStats2(size(stats,1)+ib,:))
+        view(3)
+        clear d
+        d = sqrt( (XYZ(:,1)-xb).^2 + (XYZ(:,2)-yb).^2 + (XYZ(:,3)-zb).^2);
+        if min(d(:)) < 1.1
+            clear ind
+            ind = sub2ind(size(Alabel),XYZ(:,1),XYZ(:,2),XYZ(:,3));
+            Alabel(ind) = ib;
+            selVol(ib).x = [selVol(ib).x,XYZ(:,1)'];
+            selVol(ib).y = [selVol(ib).y,XYZ(:,2)'];
+            selVol(ib).z = [selVol(ib).z,XYZ(:,3)'];
+        end
+    end
+end
+colselVol = jet(5);
+figure('defaultAxesFontSize',20,'position',[500 100 1200 800]), hold on, box on
+for ib = 1 : 3
+    plot3(selVol(ib).x,selVol(ib).y,selVol(ib).z,'or','markeredgeColor',colselVol(ib+1,:))
+end
+
+plot3(allpix_XYZ(list2Bone,1),allpix_XYZ(list2Bone,2),allpix_XYZ(list2Bone,3),'.k')
 %%
 %for ii = 1 : length(list2Bone)
 %Abinary allpix_XYZ(:,1)
