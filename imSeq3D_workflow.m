@@ -41,278 +41,7 @@ save('pinus02-y-P2_0072.mat','walls','pits','channels')
 cd(nameFolder)
 load('pinus02-y-P2_0072.mat')
 
-%% im subtract and regions props of 2D images
-c = clock; fprintf('start loading 2D stack at %0.2dh%0.2dm\n',c(4),c(5))
-% load the 3D stack
 
-iz = 1008;
-
-it = 00;
-file00 = strcat(nameFolder,nameExpe,sprintf('_%0.4d.tif',it));
-tiff_info = imfinfo(file00);
-clear im2D
-im2D00 = imread(file00, iz);
-
-it = 72;
-file72 = strcat(nameFolder,nameExpe,sprintf('_%0.4d.tif',it));
-tiff_info = imfinfo(file72);
-clear im2D
-im2D72 = imread(file72, iz);
-
-c = clock; fprintf('3D stack read at %0.2dh%0.2dm\n',c(4),c(5))
-
-imDiff = imsubtract(im2D00,im2D72);
-himTh = figure('defaultAxesFontSize',20);
-imagesc(imDiff>6), colormap gray
-stats = regionprops(imDiff>6,'Area','Centroid','ConvexHull','Solidity');
-
-listRegions = find([stats.Area]>25);
-clear ikill
-ikill = [];
-for iilr = 1 : length(listRegions)
-    ilr = listRegions(iilr);
-    if [stats(ilr).Solidity]<.75
-        ikill = [ikill,iilr];
-    end
-end
-listRegions(ikill) = [];
-
-figure
-imshow(im2D72)
-hold on
-for ilr = listRegions
-    %plot(stats(ilr).ConvexHull(:,1),stats(ilr).ConvexHull(:,2),'or-')
-    clear V F
-    V = [stats(ilr).ConvexHull(:,1),stats(ilr).ConvexHull(:,2)];
-    F = [1:size(V,1)];
-    patch('Faces',F,'Vertices',V,...
-        'faceColor',[0.1 0.1 0.8],'faceAlpha',.3,'edgeColor','none')
-end
-
-figure(himTh)
-hold on
-for ilr = listRegions
-     %plot(stats(ilr).ConvexHull(:,1),stats(ilr).ConvexHull(:,2),'or-')
-    clear V F
-    V = [stats(ilr).ConvexHull(:,1),stats(ilr).ConvexHull(:,2)];
-    F = [1:size(V,1)];
-    patch('Faces',F,'Vertices',V,...
-        'faceColor',[0.1 0.1 0.8],'faceAlpha',.3,'edgeColor','none')
-    fprintf('id: %0.0f, solidity: %4.4d \n',...
-            stats(ilr).Centroid(1,1), stats(ilr).Solidity)
-end
-%% show before and after
-hf = figure('defaultAxesFontSize',20);
-set(gcf,'position',[10 10 900 900])
-him = imshow(im2D00);
-%for it = 0 : 73
-it = 72;
-while(1)
-    if it == 0
-        it = 72;
-        figure(hf)
-        title('after')
-    elseif it == 72
-        it = 0;
-        figure(hf)
-        title('before')
-    end
-    pause(.2)
-    fileIm = strcat(nameFolder,nameExpe,sprintf('_%0.4d.tif',it));
-    tiff_info = imfinfo(file00);
-    clear im2D
-    im2D = imread(fileIm, iz);
-    him.CData = im2D;
-end
-%%
-%% (yz) plane im subtract and regions props of 2D images 
-c = clock; fprintf('start loading 2D stack at %0.2dh%0.2dm\n',c(4),c(5))
-% load the 3D stack
-
-ix = 70;
-
-it = 00;
-clear im2D00
-im2D00 = zeros(336,2016,'uint8');
-im2D00(:,:) = im3D00(ix, :,:);
-figure,
-imagesc(im2D00)
-
-it = 72;
-clear im2D72
-im2D72 = zeros(336,2016,'uint8');
-im2D72(:,:) = im3D72(ix, :,:);
-
-c = clock; fprintf('3D stack read at %0.2dh%0.2dm\n',c(4),c(5))
-
-imDiff = imsubtract(im2D00,im2D72);
-himTh = figure('defaultAxesFontSize',20);
-imagesc(imDiff>6), colormap gray
-stats = regionprops(imDiff>6,'Area','Centroid','ConvexHull','Solidity');
-
-listRegions = find([stats.Area]>25);
-clear ikill
-ikill = [];
-for iilr = 1 : length(listRegions)
-    ilr = listRegions(iilr);
-    if [stats(ilr).Solidity]<.75
-        ikill = [ikill,iilr];
-    end
-end
-listRegions(ikill) = [];
-
-figure
-imshow(im2D72)
-hold on
-for ilr = listRegions
-    %plot(stats(ilr).ConvexHull(:,1),stats(ilr).ConvexHull(:,2),'or-')
-    clear V F
-    V = [stats(ilr).ConvexHull(:,1),stats(ilr).ConvexHull(:,2)];
-    F = [1:size(V,1)];
-    patch('Faces',F,'Vertices',V,...
-        'faceColor',[0.1 0.1 0.8],'faceAlpha',.3,'edgeColor','none')
-end
-
-figure(himTh)
-hold on
-for ilr = listRegions
-     %plot(stats(ilr).ConvexHull(:,1),stats(ilr).ConvexHull(:,2),'or-')
-    clear V F
-    V = [stats(ilr).ConvexHull(:,1),stats(ilr).ConvexHull(:,2)];
-    F = [1:size(V,1)];
-    patch('Faces',F,'Vertices',V,...
-        'faceColor',[0.1 0.1 0.8],'faceAlpha',.3,'edgeColor','none')
-    fprintf('id: %0.0f, solidity: %4.4d \n',...
-            stats(ilr).Centroid(1,1), stats(ilr).Solidity)
-end
-%% show before and after
-hf = figure('defaultAxesFontSize',20);
-set(gcf,'position',[10 10 900 900])
-him = imshow(im2D00);
-%for it = 0 : 73
-it = 72;
-while(1)
-    if it == 0
-        it = 72;
-        figure(hf)
-        title('after')
-    im2D = im2D00;
-    elseif it == 72
-        it = 0;
-        figure(hf)
-        title('before')
-    im2D = im2D72;
-    end
-    pause(.2)
-    him.CData = im2D;
-end
-
-%% testing a blob function
-%  https://fr.mathworks.com/matlabcentral/answers/176553-blob-detection-in-matlab
-
-im2D = ~(im3D00(:,:,1008)>115);
-BBOX_OUT = [];
-NUM_BLOBS = [];
-LABEL = [];
-%%connected component analisys
-hblob = vision.BlobAnalysis;
-hblob.CentroidOutputPort = false;
-hblob.MaximumCount = 3500;
-hblob.Connectivity = 4;
-hblob.MaximumBlobArea = 6500;
-hblob.MinimumBlobArea = 20;
-hblob.LabelMatrixOutputPort = true;
-hblob.OrientationOutputPort = true;
-hblob.MajorAxisLengthOutputPort = true;
-hblob.MinorAxisLengthOutputPort = true;
-hblob.EccentricityOutputPort = true;
-hblob.ExtentOutputPort = true;
-hblob.BoundingBoxOutputPort = true;
-[AREA,BBOX,MAJOR,MINOR,ORIENT,ECCEN,EXTENT,LABEL] = step(hblob,im2D);
-imshow(LABEL*2^16)
-numberOfBlobs = length(AREA);
-
-set(gcf,'position',[947         155        1012         832])
-figure
-imshow(im3D00(:,:,1008))
-set(gcf,'position',[27   197   917   769])
-%%      testing another web function
-% https://stackoverflow.com/questions/42626416/how-to-properly-tesselate-a-image-of-cells-using-matlab/42630616
-iz = 1008;
-clear x y xv yv xs ys
-im = 255-im3D00(:,:,iz);
-figure,
-imshow(im)
-
-imEAN = 255-uint8(mean(im3D00(:,:,iz+[-10:+10]),3));
-figure
-imshow(imEAN)
-%%
-
-%im = imEAN;
-im = double(im3D72(:,:,iz)) - double(im3D00(:,:,iz));
-min(im(:))
-max(im(:))
-%%
-figure,imagesc(im);axis image;
-%%
-% blur image
-sigma=2;
-kernel = fspecial('gaussian',4*sigma+1,sigma);
-im2=imfilter(im,kernel,'symmetric');
-
-figure,imagesc(im2);axis image; colormap gray
-
-%% watershed
-L = watershed(max(im2(:))-im2);
-L = watershed(im2 > -5);
-[x,y]=find(L==0);
-
-%drw boundaries
-figure,imagesc(im3D00(:,:,iz)),axis image, colormap gray
-hold on, plot(y,x,'r.')
-
-% analyse each blob
-tmp=zeros(size(im));
-
-for i=1:max(L(:))
-  ind=find(L==i);
-  mask=L==i;
-  [thr,metric] =multithresh(im(ind),1);
-  if metric>0.7
-    tmp(ind)=im(ind)>thr;
-  end
-end
-
-% noise removal
-tmp=imopen(tmp,strel('disk',1));
-figure,imagesc(tmp),axis image
-
-
-clear stats
-stats = regionprops(L>0,'centroid');
-figure
-imagesc(im3D00(:,:,iz)), colormap gray
-%hold on, plot(y,x,'r.')
-hold on
-for is = 1 : length(stats)
-    xv(is) = stats(is).Centroid(:,1);
-    yv(is) = stats(is).Centroid(:,2);
-    plot(xv,yv,'+r')
-end
-
-voronoi(xv,yv)
-[vx,vy] = voronoi(xv,yv);
-
-%% try to find channels by thresholding images
-
-im2D = imresize(imgaussfilt(im3D00(:,:,1008) , 1),2);
-figure
-imagesc(im2D)
-
-[centers,radii] = imfindcircles(im2D,[7 50],'ObjectPolarity','dark');
-hold on
-viscircles(centers, radii,'EdgeColor','b');
 %% preload images - short time scale ( 1 sec )
 
 ci = clock; fprintf('start to read 3D stack at %0.2dh%0.2dm\n',ci(4),ci(5))
@@ -345,97 +74,6 @@ end
 
 cf = clock; fprintf('3D stack read at %0.2dh%0.2dm in %0.0f s \n',cf(4),cf(5),etime(cf,ci))
 
-
-%% SLICING in (xy) planes - im subtract and regions props of 2D images
-
-ci = clock; fprintf('3D stack read at %0.2dh%0.2dm\n',ci(4),ci(5))
-clear stats toc_Readimages toc_imdiff toc_regionprops
-toc_Readimages  = 0;
-toc_imdiff      = 0;
-toc_regionprops = 0;
-for iz = 0001 : 2016
-    fprintf('iz: %0.0f\n',iz)
-    clear imDiff im2D00 im2D72
-    
-    imDiff = zeros(336,336,'uint8');
-    im2D00 = zeros(336,336,'uint8');
-    im2D72 = zeros(336,336,'uint8');
-    
-%     it = 00;
-%     file00 = strcat(nameFolder,nameExpe,sprintf('_%0.4d.tif',it));
-%     tiff_info = imfinfo(file00);
-%     im2D00 = imread(file00, iz);
-%     
-%     it = 72;
-%     file72 = strcat(nameFolder,nameExpe,sprintf('_%0.4d.tif',it));
-%     tiff_info = imfinfo(file72);
-%     im2D72 = imread(file72, iz);
-
-    tic
-    if iz >1 && iz <2016
-    im2D00 = mean(im3D00(:,:,max(iz-5,1):min(iz+5,2016)),3);
-    im2D72 = mean(im3D72(:,:,max(iz-5,1):min(iz+5,2016)),3);
-    else
-    im2D00 = im3D00(:,:,iz);
-    im2D72 = im3D72(:,:,iz);
-    end
-        
-        toc_Readimages = toc_Readimages + toc;
-    
-    tic
-    imDiff = imsubtract(im2D00,im2D72);
-    toc_imdiff = toc_imdiff + toc;
-
-    tic
-    BW = bwareaopen(imDiff>6,25,8);
-    stats2D = regionprops(BW,'Area','Centroid','ConvexHull','Solidity');
-    listRegions = find([stats2D.Solidity]>.75);
-    stats(iz).stats = stats2D(listRegions);
-    toc_regionprops = toc_regionprops + toc;
-end
-
-c = clock; fprintf('3D stack read at %0.2dh%0.2dm in %0.0f s \n',c(4),c(5),etime(c,ci))
-fprintf(strcat('time 2 Readimages : %0.0f s, \n',... 
-               'time 2 Readimages : %0.0f s, \n',...
-               'time 2 Readimages : %0.0f s \n'),...
-            toc_Readimages,toc_imdiff,toc_regionprops)
-%% 3D rendering 
-figure('defaultAxesFontSize',20)
-hold on, box on
-for iz =  1 : 1 : 2016
-    clear statsiz
-    statsiz = stats(iz).stats;
-    listRegions = find([statsiz.Area]>25);
-    for iilr = 1 : length(listRegions)
-        ilr = listRegions(iilr);
-%         clear V F
-%         V = [statsiz(ilr).ConvexHull(:,1),...
-%              statsiz(ilr).ConvexHull(:,2),...
-%              iz*ones(size(statsiz(ilr).ConvexHull(:,2)))];
-%         F = [1:size(V,1)];
-%         patch('Faces',F,'Vertices',V,...
-%             'faceColor',[0.1 0.1 0.8],'faceAlpha',.3,'edgeColor','none')
-        
-        clear V F
-        V = [[statsiz(ilr).ConvexHull(:,1);statsiz(ilr).ConvexHull(:,1)],...
-             [statsiz(ilr).ConvexHull(:,2);statsiz(ilr).ConvexHull(:,2)],...
-             [(iz-.5)*ones(size(statsiz(ilr).ConvexHull(:,2)));(iz+.5)*ones(size(statsiz(ilr).ConvexHull(:,2)))]];
-        clear nPts, nPts = size(V,1)/2;
-        for iff = 1 : nPts-1
-            F(iff,1:4) = [iff,iff+1,nPts+iff+1,nPts+iff+0];
-        end
-        patch('Faces',F,'Vertices',V,...
-            'faceColor',[0.1 0.1 0.8],'faceAlpha',.3,'edgeColor','none')
-        
-    end
-end
-xlabel('x')
-ylabel('y')
-zlabel('z')
-view(109,9.7)
-axis([0 336 0 336 0 2016])
-%axis([100 250 50 200 1450 1550])
-%% show the results as an image sequence
 
 %% straight away 3D
 tic
@@ -578,7 +216,7 @@ ylabel('y')
 zlabel('z')
 toc
 
-%% determine who belongs to which bone
+%% determine who belongs to which bone ~12 seconds
 tic
 listBoned = [];
 ilb = 0;
@@ -697,51 +335,57 @@ end
 view(3)
 %% Take one of the selVol and find if the new regionprops can be attached
 
-Alabel =  false(336,336,2016);
+selVol02 = selVol;
+Alabel =  zeros(336,336,2016,'double');
 
-
+tic
 for ib = 1:3
+    tic
     clear xb yb zb ind
-    xb = selVol(ib).x;
-    yb = selVol(ib).y;
-    zb = selVol(ib).z;
-    plot3(xb,yb,zb,'or','markeredgeColor',colStats2(size(stats,1)+ib,:))
+    xb = selVol02(ib).x;
+    yb = selVol02(ib).y;
+    zb = selVol02(ib).z;
+    %plot3(xb,yb,zb,'or','markeredgeColor',colStats2(size(stats,1)+ib,:))
     ind = sub2ind(size(Alabel),xb,yb,zb);
     Alabel(ind) = ib;
+    toc
     
+    tic
     for istat = 1: size(stats,1)
+        istat
         clear XYZ
         XYZ = stats.VoxelList{istat,1} ;
         
-        plot3(xb,yb,zb,'or','markeredgeColor',colStats2(size(stats,1)+ib,:))
-        view(3)
+        %plot3(xb,yb,zb,'or','markeredgeColor',colStats2(size(stats,1)+ib,:))
+        %view(3)
         clear d
         d = sqrt( (XYZ(:,1)-xb).^2 + (XYZ(:,2)-yb).^2 + (XYZ(:,3)-zb).^2);
         if min(d(:)) < 1.1
             clear ind
             ind = sub2ind(size(Alabel),XYZ(:,1),XYZ(:,2),XYZ(:,3));
+            ib
+            size(ind)
             Alabel(ind) = ib;
-            selVol(ib).x = [selVol(ib).x,XYZ(:,1)'];
-            selVol(ib).y = [selVol(ib).y,XYZ(:,2)'];
-            selVol(ib).z = [selVol(ib).z,XYZ(:,3)'];
+            selVol02(ib).x = [selVol02(ib).x,XYZ(:,1)'];
+            selVol02(ib).y = [selVol02(ib).y,XYZ(:,2)'];
+            selVol02(ib).z = [selVol02(ib).z,XYZ(:,3)'];
         end
     end
+    toc
 end
+toc
+%%
+tic
 colselVol = jet(5);
 figure('defaultAxesFontSize',20,'position',[500 100 1200 800]), hold on, box on
 for ib = 1 : 3
-    plot3(selVol(ib).x,selVol(ib).y,selVol(ib).z,'or','markeredgeColor',colselVol(ib+1,:))
+    plot3(selVol02(ib).x,selVol02(ib).y,selVol02(ib).z,'or','markeredgeColor',colselVol(ib+1,:))
 end
-
-plot3(allpix_XYZ(list2Bone,1),allpix_XYZ(list2Bone,2),allpix_XYZ(list2Bone,3),'.k')
+toc
 %%
-%for ii = 1 : length(list2Bone)
-%Abinary allpix_XYZ(:,1)
-%end
-%%
-figure('defaultAxesFontSize',20,'position',[500 100 1200 800]), hold on, box on
-plot3(allpix_XYZ(list2Bone,1),allpix_XYZ(list2Bone,2),allpix_XYZ(list2Bone,3),'or')
+plot3(allpix_XYZ(:,1),allpix_XYZ(:,2),allpix_XYZ(:,3),'.k')
 view(3)
+
 
 %% https://fr.mathworks.com/matlabcentral/answers/291485-how-can-i-plot-a-3d-plane-knowing-its-center-point-coordinates-and-its-normal
 figure('defaultAxesFontSize',20,'position',[500 100 1200 800]), hold on, box on
@@ -815,7 +459,10 @@ view(3)
 plot3(allpix_XYZ(list2Bone,1),allpix_XYZ(list2Bone,2),allpix_XYZ(list2Bone,3),...
     'o','markerFaceColor',.3*[1 1 1])
 
-%% refine by hand
+%% DOWN TO HERE
+
+
+%% 3D - refine by hand
 figure('defaultAxesFontSize',20,'position',[500 100 1200 800])
 hold on, box on
 for iz =  1493 : 1515
@@ -1942,7 +1589,373 @@ for iz =  1493 : 1504
         hgi(igi) = plot(allpix_XYZ(ip,1),allpix_XYZ(ip,2),'+r');
     end
 end
-%% functions
+
+
+%% im subtract and regions props of 2D images
+c = clock; fprintf('start loading 2D stack at %0.2dh%0.2dm\n',c(4),c(5))
+% load the 3D stack
+
+iz = 1008;
+
+it = 00;
+file00 = strcat(nameFolder,nameExpe,sprintf('_%0.4d.tif',it));
+tiff_info = imfinfo(file00);
+clear im2D
+im2D00 = imread(file00, iz);
+
+it = 72;
+file72 = strcat(nameFolder,nameExpe,sprintf('_%0.4d.tif',it));
+tiff_info = imfinfo(file72);
+clear im2D
+im2D72 = imread(file72, iz);
+
+c = clock; fprintf('3D stack read at %0.2dh%0.2dm\n',c(4),c(5))
+
+imDiff = imsubtract(im2D00,im2D72);
+himTh = figure('defaultAxesFontSize',20);
+imagesc(imDiff>6), colormap gray
+stats = regionprops(imDiff>6,'Area','Centroid','ConvexHull','Solidity');
+
+listRegions = find([stats.Area]>25);
+clear ikill
+ikill = [];
+for iilr = 1 : length(listRegions)
+    ilr = listRegions(iilr);
+    if [stats(ilr).Solidity]<.75
+        ikill = [ikill,iilr];
+    end
+end
+listRegions(ikill) = [];
+
+figure
+imshow(im2D72)
+hold on
+for ilr = listRegions
+    %plot(stats(ilr).ConvexHull(:,1),stats(ilr).ConvexHull(:,2),'or-')
+    clear V F
+    V = [stats(ilr).ConvexHull(:,1),stats(ilr).ConvexHull(:,2)];
+    F = [1:size(V,1)];
+    patch('Faces',F,'Vertices',V,...
+        'faceColor',[0.1 0.1 0.8],'faceAlpha',.3,'edgeColor','none')
+end
+
+figure(himTh)
+hold on
+for ilr = listRegions
+     %plot(stats(ilr).ConvexHull(:,1),stats(ilr).ConvexHull(:,2),'or-')
+    clear V F
+    V = [stats(ilr).ConvexHull(:,1),stats(ilr).ConvexHull(:,2)];
+    F = [1:size(V,1)];
+    patch('Faces',F,'Vertices',V,...
+        'faceColor',[0.1 0.1 0.8],'faceAlpha',.3,'edgeColor','none')
+    fprintf('id: %0.0f, solidity: %4.4d \n',...
+            stats(ilr).Centroid(1,1), stats(ilr).Solidity)
+end
+%% show before and after
+hf = figure('defaultAxesFontSize',20);
+set(gcf,'position',[10 10 900 900])
+him = imshow(im2D00);
+%for it = 0 : 73
+it = 72;
+while(1)
+    if it == 0
+        it = 72;
+        figure(hf)
+        title('after')
+    elseif it == 72
+        it = 0;
+        figure(hf)
+        title('before')
+    end
+    pause(.2)
+    fileIm = strcat(nameFolder,nameExpe,sprintf('_%0.4d.tif',it));
+    tiff_info = imfinfo(file00);
+    clear im2D
+    im2D = imread(fileIm, iz);
+    him.CData = im2D;
+end
+%%
+%% (yz) plane im subtract and regions props of 2D images 
+c = clock; fprintf('start loading 2D stack at %0.2dh%0.2dm\n',c(4),c(5))
+% load the 3D stack
+
+ix = 70;
+
+it = 00;
+clear im2D00
+im2D00 = zeros(336,2016,'uint8');
+im2D00(:,:) = im3D00(ix, :,:);
+figure,
+imagesc(im2D00)
+
+it = 72;
+clear im2D72
+im2D72 = zeros(336,2016,'uint8');
+im2D72(:,:) = im3D72(ix, :,:);
+
+c = clock; fprintf('3D stack read at %0.2dh%0.2dm\n',c(4),c(5))
+
+imDiff = imsubtract(im2D00,im2D72);
+himTh = figure('defaultAxesFontSize',20);
+imagesc(imDiff>6), colormap gray
+stats = regionprops(imDiff>6,'Area','Centroid','ConvexHull','Solidity');
+
+listRegions = find([stats.Area]>25);
+clear ikill
+ikill = [];
+for iilr = 1 : length(listRegions)
+    ilr = listRegions(iilr);
+    if [stats(ilr).Solidity]<.75
+        ikill = [ikill,iilr];
+    end
+end
+listRegions(ikill) = [];
+
+figure
+imshow(im2D72)
+hold on
+for ilr = listRegions
+    %plot(stats(ilr).ConvexHull(:,1),stats(ilr).ConvexHull(:,2),'or-')
+    clear V F
+    V = [stats(ilr).ConvexHull(:,1),stats(ilr).ConvexHull(:,2)];
+    F = [1:size(V,1)];
+    patch('Faces',F,'Vertices',V,...
+        'faceColor',[0.1 0.1 0.8],'faceAlpha',.3,'edgeColor','none')
+end
+
+figure(himTh)
+hold on
+for ilr = listRegions
+     %plot(stats(ilr).ConvexHull(:,1),stats(ilr).ConvexHull(:,2),'or-')
+    clear V F
+    V = [stats(ilr).ConvexHull(:,1),stats(ilr).ConvexHull(:,2)];
+    F = [1:size(V,1)];
+    patch('Faces',F,'Vertices',V,...
+        'faceColor',[0.1 0.1 0.8],'faceAlpha',.3,'edgeColor','none')
+    fprintf('id: %0.0f, solidity: %4.4d \n',...
+            stats(ilr).Centroid(1,1), stats(ilr).Solidity)
+end
+%% show before and after
+hf = figure('defaultAxesFontSize',20);
+set(gcf,'position',[10 10 900 900])
+him = imshow(im2D00);
+%for it = 0 : 73
+it = 72;
+while(1)
+    if it == 0
+        it = 72;
+        figure(hf)
+        title('after')
+    im2D = im2D00;
+    elseif it == 72
+        it = 0;
+        figure(hf)
+        title('before')
+    im2D = im2D72;
+    end
+    pause(.2)
+    him.CData = im2D;
+end
+
+%% testing a blob function
+%  https://fr.mathworks.com/matlabcentral/answers/176553-blob-detection-in-matlab
+
+im2D = ~(im3D00(:,:,1008)>115);
+BBOX_OUT = [];
+NUM_BLOBS = [];
+LABEL = [];
+%%connected component analisys
+hblob = vision.BlobAnalysis;
+hblob.CentroidOutputPort = false;
+hblob.MaximumCount = 3500;
+hblob.Connectivity = 4;
+hblob.MaximumBlobArea = 6500;
+hblob.MinimumBlobArea = 20;
+hblob.LabelMatrixOutputPort = true;
+hblob.OrientationOutputPort = true;
+hblob.MajorAxisLengthOutputPort = true;
+hblob.MinorAxisLengthOutputPort = true;
+hblob.EccentricityOutputPort = true;
+hblob.ExtentOutputPort = true;
+hblob.BoundingBoxOutputPort = true;
+[AREA,BBOX,MAJOR,MINOR,ORIENT,ECCEN,EXTENT,LABEL] = step(hblob,im2D);
+imshow(LABEL*2^16)
+numberOfBlobs = length(AREA);
+
+set(gcf,'position',[947         155        1012         832])
+figure
+imshow(im3D00(:,:,1008))
+set(gcf,'position',[27   197   917   769])
+%%      testing another web function
+% https://stackoverflow.com/questions/42626416/how-to-properly-tesselate-a-image-of-cells-using-matlab/42630616
+iz = 1008;
+clear x y xv yv xs ys
+im = 255-im3D00(:,:,iz);
+figure,
+imshow(im)
+
+imEAN = 255-uint8(mean(im3D00(:,:,iz+[-10:+10]),3));
+figure
+imshow(imEAN)
+%%
+
+%im = imEAN;
+im = double(im3D72(:,:,iz)) - double(im3D00(:,:,iz));
+min(im(:))
+max(im(:))
+%%
+figure,imagesc(im);axis image;
+%%
+% blur image
+sigma=2;
+kernel = fspecial('gaussian',4*sigma+1,sigma);
+im2=imfilter(im,kernel,'symmetric');
+
+figure,imagesc(im2);axis image; colormap gray
+
+%% watershed
+L = watershed(max(im2(:))-im2);
+L = watershed(im2 > -5);
+[x,y]=find(L==0);
+
+%drw boundaries
+figure,imagesc(im3D00(:,:,iz)),axis image, colormap gray
+hold on, plot(y,x,'r.')
+
+% analyse each blob
+tmp=zeros(size(im));
+
+for i=1:max(L(:))
+  ind=find(L==i);
+  mask=L==i;
+  [thr,metric] =multithresh(im(ind),1);
+  if metric>0.7
+    tmp(ind)=im(ind)>thr;
+  end
+end
+
+% noise removal
+tmp=imopen(tmp,strel('disk',1));
+figure,imagesc(tmp),axis image
+
+
+clear stats
+stats = regionprops(L>0,'centroid');
+figure
+imagesc(im3D00(:,:,iz)), colormap gray
+%hold on, plot(y,x,'r.')
+hold on
+for is = 1 : length(stats)
+    xv(is) = stats(is).Centroid(:,1);
+    yv(is) = stats(is).Centroid(:,2);
+    plot(xv,yv,'+r')
+end
+
+voronoi(xv,yv)
+[vx,vy] = voronoi(xv,yv);
+
+%% try to find channels by thresholding images
+
+im2D = imresize(imgaussfilt(im3D00(:,:,1008) , 1),2);
+figure
+imagesc(im2D)
+
+[centers,radii] = imfindcircles(im2D,[7 50],'ObjectPolarity','dark');
+hold on
+viscircles(centers, radii,'EdgeColor','b');
+
+
+%% SLICING in (xy) planes - im subtract and regions props of 2D images
+
+ci = clock; fprintf('3D stack read at %0.2dh%0.2dm\n',ci(4),ci(5))
+clear stats toc_Readimages toc_imdiff toc_regionprops
+toc_Readimages  = 0;
+toc_imdiff      = 0;
+toc_regionprops = 0;
+for iz = 0001 : 2016
+    fprintf('iz: %0.0f\n',iz)
+    clear imDiff im2D00 im2D72
+    
+    imDiff = zeros(336,336,'uint8');
+    im2D00 = zeros(336,336,'uint8');
+    im2D72 = zeros(336,336,'uint8');
+    
+%     it = 00;
+%     file00 = strcat(nameFolder,nameExpe,sprintf('_%0.4d.tif',it));
+%     tiff_info = imfinfo(file00);
+%     im2D00 = imread(file00, iz);
+%     
+%     it = 72;
+%     file72 = strcat(nameFolder,nameExpe,sprintf('_%0.4d.tif',it));
+%     tiff_info = imfinfo(file72);
+%     im2D72 = imread(file72, iz);
+
+    tic
+    if iz >1 && iz <2016
+    im2D00 = mean(im3D00(:,:,max(iz-5,1):min(iz+5,2016)),3);
+    im2D72 = mean(im3D72(:,:,max(iz-5,1):min(iz+5,2016)),3);
+    else
+    im2D00 = im3D00(:,:,iz);
+    im2D72 = im3D72(:,:,iz);
+    end
+        
+        toc_Readimages = toc_Readimages + toc;
+    
+    tic
+    imDiff = imsubtract(im2D00,im2D72);
+    toc_imdiff = toc_imdiff + toc;
+
+    tic
+    BW = bwareaopen(imDiff>6,25,8);
+    stats2D = regionprops(BW,'Area','Centroid','ConvexHull','Solidity');
+    listRegions = find([stats2D.Solidity]>.75);
+    stats(iz).stats = stats2D(listRegions);
+    toc_regionprops = toc_regionprops + toc;
+end
+
+c = clock; fprintf('3D stack read at %0.2dh%0.2dm in %0.0f s \n',c(4),c(5),etime(c,ci))
+fprintf(strcat('time 2 Readimages : %0.0f s, \n',... 
+               'time 2 Readimages : %0.0f s, \n',...
+               'time 2 Readimages : %0.0f s \n'),...
+            toc_Readimages,toc_imdiff,toc_regionprops)
+%% 3D rendering 
+figure('defaultAxesFontSize',20)
+hold on, box on
+for iz =  1 : 1 : 2016
+    clear statsiz
+    statsiz = stats(iz).stats;
+    listRegions = find([statsiz.Area]>25);
+    for iilr = 1 : length(listRegions)
+        ilr = listRegions(iilr);
+%         clear V F
+%         V = [statsiz(ilr).ConvexHull(:,1),...
+%              statsiz(ilr).ConvexHull(:,2),...
+%              iz*ones(size(statsiz(ilr).ConvexHull(:,2)))];
+%         F = [1:size(V,1)];
+%         patch('Faces',F,'Vertices',V,...
+%             'faceColor',[0.1 0.1 0.8],'faceAlpha',.3,'edgeColor','none')
+        
+        clear V F
+        V = [[statsiz(ilr).ConvexHull(:,1);statsiz(ilr).ConvexHull(:,1)],...
+             [statsiz(ilr).ConvexHull(:,2);statsiz(ilr).ConvexHull(:,2)],...
+             [(iz-.5)*ones(size(statsiz(ilr).ConvexHull(:,2)));(iz+.5)*ones(size(statsiz(ilr).ConvexHull(:,2)))]];
+        clear nPts, nPts = size(V,1)/2;
+        for iff = 1 : nPts-1
+            F(iff,1:4) = [iff,iff+1,nPts+iff+1,nPts+iff+0];
+        end
+        patch('Faces',F,'Vertices',V,...
+            'faceColor',[0.1 0.1 0.8],'faceAlpha',.3,'edgeColor','none')
+        
+    end
+end
+xlabel('x')
+ylabel('y')
+zlabel('z')
+view(109,9.7)
+axis([0 336 0 336 0 2016])
+%axis([100 250 50 200 1450 1550])
+
+%% FUNCTIONS 
 
 function val = PONOsubpix(im2D,Xq,Yq)
 
